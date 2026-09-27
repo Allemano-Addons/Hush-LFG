@@ -27,3 +27,4 @@
 - `/hlfg probe` also looks for a micro button or slash command that opens the Group Finder.
 - Listings for several dungeons ("5 activities") are read with all their dungeons: the dungeon filter and search match any of them, the row shows the dungeon you filter on plus "+4" (hover for the list).
 - Until the Group Finder is ready, Refresh Finder opens it for you (a secure click on its micro button, `LFDMicroButton`) and tries a refresh right away.
+- Refresh Finder also switches the Group Finder to its search tab (the micro button opens the "list yourself" tab).
