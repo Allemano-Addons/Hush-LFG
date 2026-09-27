@@ -11,6 +11,6 @@ read_globals = {
     "Hush",
     "strjoin", "strsplit", "strtrim", "strlower", "strupper", "tostringall", "tinsert", "tremove", "wipe",
     "sort", "floor", "ceil", "min", "max", "format", "date", "time", "CopyTable", "geterrorhandler",
-    "CreateFrame", "UIParent", "DEFAULT_CHAT_FRAME", "GetTime",
+    "CreateFrame", "UIParent", "DEFAULT_CHAT_FRAME", "GetTime", "C_Timer",
     "C_LFGList", "C_Texture", "issecretvalue", "CLASS_ICON_TCOORDS",
 }

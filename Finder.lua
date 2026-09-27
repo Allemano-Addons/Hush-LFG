@@ -143,11 +143,23 @@ function Finder.Search(categoryID)
     if not categoryID then L.Print("No Group Finder categories yet - open the Group Finder once and try again.") return end
     local activities = call(C.GetAvailableActivities, categoryID)
     -- Classic signature (category, activityIDs) first, then the retail one (category, filter...).
+    local how = "classic"
     local ok = type(activities) == "table" and pcall(C.Search, categoryID, activities)
-    if not ok then ok = pcall(C.Search, categoryID, 0, 0) end
-    if not ok then ok = pcall(C.Search, categoryID) end
+    if not ok then how = "retail"; ok = pcall(C.Search, categoryID, 0, 0) end
+    if not ok then how = "plain"; ok = pcall(C.Search, categoryID) end
     Finder.lastCategory = categoryID
-    L.Print(ok and ("Searching category " .. categoryID .. "...") or "The search was refused.")
+    Finder.pending = ok and GetTime() or nil
+    L.Print(ok and ("Searching category %d (%s, %d activities)..."):format(categoryID, how,
+        type(activities) == "table" and #activities or 0) or "The search was refused.")
+    -- Tell the player if no answer comes.
+    if ok then
+        C_Timer.After(10, function()
+            if Finder.pending and GetTime() - Finder.pending >= 9 then
+                Finder.pending = nil
+                L.Print("No answer from the Group Finder after 10 s.")
+            end
+        end)
+    end
 end
 
 -- ---------------------------------------------------------------------------
@@ -159,6 +171,10 @@ events:SetScript("OnEvent", function(_, event, ...)
     local ok, err = pcall(function(...)
         if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" then
             readAll()
+            if Finder.pending then
+                Finder.pending = nil
+                L.Print(("Got %d listings. /hlfg dump to list them."):format(#L.listings))
+            end
         elseif event == "LFG_LIST_SEARCH_RESULT_UPDATED" then
             readOne(...)
         elseif event == "LFG_LIST_SEARCH_FAILED" then
