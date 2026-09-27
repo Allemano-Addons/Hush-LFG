@@ -332,3 +332,36 @@ function Finder.Dump()
         L.Print("  " .. describe(l))
     end
 end
+
+-- /hlfg frames: the buttons in Blizzard's Group Finder window (to find its search tab).
+function Finder.Frames()
+    local root = _G.LFGParentFrame
+    if not root then L.Print("The Group Finder is not loaded - open it once (I).") return end
+    local function label(f, parent)
+        local n = f.GetName and f:GetName()
+        if n then return n end
+        if parent then
+            for k, v in pairs(parent) do
+                if v == f and type(k) == "string" then return "." .. k end
+            end
+        end
+        return "?"
+    end
+    local out = {}
+    local function walk(f, depth, prefix)
+        if depth > 3 or not f.GetChildren then return end
+        for _, c in ipairs({ f:GetChildren() }) do
+            local name = prefix .. label(c, f)
+            local kind = c.GetObjectType and c:GetObjectType() or "?"
+            if kind == "Button" or kind == "CheckButton" then
+                out[#out + 1] = name .. (c:IsShown() and "" or "(hidden)")
+            end
+            walk(c, depth + 1, name .. ">")
+        end
+    end
+    walk(root, 1, "")
+    L.Print(#out, "buttons in the Group Finder:")
+    for i = 1, #out, 6 do
+        L.Print("  " .. table.concat(out, ", ", i, min(i + 5, #out)))
+    end
+end
