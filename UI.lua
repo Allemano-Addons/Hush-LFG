@@ -185,10 +185,10 @@ local function fillRow(r, e)
     r.text:SetText(e.text or "")
 
     local meta = {}
-    if e.minLevel and e.maxLevel then
+    if e.minLevel and e.maxLevel and e.minLevel ~= e.maxLevel then
         meta[#meta + 1] = "Level " .. e.minLevel .. "-" .. e.maxLevel
-    elseif e.level then
-        meta[#meta + 1] = "Level " .. e.level
+    elseif e.minLevel or e.level then
+        meta[#meta + 1] = "Level " .. (e.minLevel or e.level)
     end
     if e.kind == "group" and e.size then meta[#meta + 1] = e.size .. "/5" end
     if e.area then meta[#meta + 1] = e.area end

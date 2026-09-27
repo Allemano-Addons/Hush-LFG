@@ -9,6 +9,7 @@ Hush = { Feed = {
             { author = "Teffes Kadaver", class = "DRUID", text = "WC need heals", plain = "wc need heals", last = now - 30, info = { lfType = "lfm", roles = { healer = true } } },
             { author = "Solo Guy", class = "MAGE", text = "dps LFG RFC", plain = "dps lfg rfc", last = now - 90, info = { lfType = "lfg", roles = { dps = true } } },
             { author = "Big Tank", class = "WARRIOR", text = "LFM SFK need tank", plain = "lfm sfk need tank", last = now - 10, info = { lfType = "lfm", roles = { tank = true } } },
+            { author = "Craft Seeker", class = "PRIEST", text = "LF ENCHANTER UC", plain = "lf enchanter uc", last = now - 5, info = { lfType = "lfg" } },
         }
     end,
 } }
@@ -40,5 +41,7 @@ check(by["Solo Guy"].kind == "player" and by["Solo Guy"].activity == "Ragefire C
 check(by["Big Tank"].kind == "group" and by["Big Tank"].activity == "Shadowfang Keep" and by["Big Tank"].missing.tank == 1, "Big Tank: SFK group needs a tank")
 check(entries[1].leader == "Big Tank", "newest first")
 check(L.DetectActivity("lf ruins of lordaeron heal") == "Ruins of Lordaeron", "full Finder names in chat")
+check(by["Craft Seeker"] == nil, "a post without dungeon or role is left out")
+check(by["Oh Miyu"].minLevel == nil and by["Ure Savior"].minLevel == 20, "levels come from the members")
 check(L.DetectActivity("dm run") == "Deadmines", "dm -> the Finder's Deadmines")
 print(bad == 0 and "ALL OK" or (bad .. " wrong"))

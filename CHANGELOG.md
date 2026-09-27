@@ -17,3 +17,4 @@
 - Refresh Finder clicks Blizzard's refresh button with a secure /click (addons may not search themselves). Out of combat; the Group Finder must have been opened once.
 - Whisper (opens Hush) on every row, Invite on players.
 - `Tests/merge_test.lua`: offline test of the merging (not loaded by the game).
+- From the first window test: chat posts are only listed when they name a dungeon or a role ("LF enchanter" is not a group; Hush Feed now sorts crafter requests as Services). Levels are the members' own levels (the Group Finder's minimum is often 0); a player shows their level.

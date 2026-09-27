@@ -58,9 +58,15 @@ local function fromListing(l)
         members = l.members,
         size = l.numMembers,
         age = (l.age or 0) + (time() - (l.readAt or time())),
-        minLevel = l.minLevel, maxLevel = l.maxLevel,
         listing = l,
     }
+    -- The members' own levels (the Group Finder's minimum level is often 0).
+    for _, m in ipairs(l.members) do
+        if type(m.level) == "number" and m.level > 0 then
+            e.minLevel = min(e.minLevel or m.level, m.level)
+            e.maxLevel = max(e.maxLevel or m.level, m.level)
+        end
+    end
     if e.kind == "group" then
         local have = { tank = 0, healer = 0, dps = 0 }
         for _, m in ipairs(l.members) do
@@ -125,9 +131,12 @@ function L.Build()
                     if not e.text then e.text = p.text end
                 end
             else
+                -- Only posts about a dungeon or a role ("LF enchanter" is not a group).
                 e = fromPost(p)
-                entries[#entries + 1] = e
-                byLeader[strlower(e.leader)] = e
+                if e.activity or next(e.missing or e.roles) then
+                    entries[#entries + 1] = e
+                    byLeader[strlower(e.leader)] = e
+                end
             end
         end
     end
