@@ -1,0 +1,10 @@
+## Interface: 16001
+## Title: Hush LFG
+## Notes: Groups and players from chat and the Group Finder in one list, for Hush.
+## Version: 0.1.0
+## Dependencies: Hush, Hush_Feed
+## SavedVariables: HushLFGDB
+## IconTexture: Interface\AddOns\Hush\Media\logo
+
+Core.lua
+Finder.lua
