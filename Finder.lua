@@ -157,6 +157,24 @@ local function categories()
     return list
 end
 
+-- Can Blizzard's refresh button search? Only after the Group Finder has chosen what to search
+-- for (you searched there once this session). Read only: writing Blizzard's choices from an
+-- addon would taint them and get every later search blocked.
+function Finder.Ready()
+    if Finder.updated then return true end
+    local n = 0
+    pcall(function()
+        local dd = _G.LFGBrowseFrame.ActivityDropdown
+        local sel = dd.selectedValue or dd.value or dd.selectedValues
+        if type(sel) == "table" then
+            for _ in pairs(sel) do n = n + 1 end
+        elseif sel ~= nil then
+            n = 1
+        end
+    end)
+    return n > 0
+end
+
 -- C_LFGList.Search is protected on Forever (an addon call is blocked, even from a slash
 -- command). Searches come from Blizzard's own Group Finder; we only read the results.
 function Finder.Search()
@@ -250,7 +268,19 @@ function Finder.Probe()
     for _, n in ipairs({ "LFGMicroButton", "LFGParentFrameTab1", "LFGParentFrameTab2", "ToggleLFGParentFrame", "LFGParentFrame_Toggle" }) do
         if _G[n] then buttons[#buttons + 1] = n end
     end
-    L.Print("toggles:", #buttons > 0 and table.concat(buttons, ", ") or "none")
+    -- A safe way to open the Group Finder from a macro: a micro button or a slash command.
+    pcall(function()
+        for k, v in pairs(_G) do
+            if type(k) == "string" and k:find("MicroButton$") and type(v) == "table" then
+                local lk = strlower(k)
+                if lk:find("lfg") or lk:find("group") or lk:find("lfd") or lk:find("finder") then buttons[#buttons + 1] = k end
+            elseif type(k) == "string" and k:find("^SLASH_") and type(v) == "string" then
+                local lv = strlower(v)
+                if lv:find("lfg") or lv:find("group") or lv:find("lfd") or lv:find("finder") then buttons[#buttons + 1] = v end
+            end
+        end
+    end)
+    L.Print("toggles:", #buttons > 0 and table.concat(buttons, ", ") or "none", "· ready:", tostring(Finder.Ready()))
     L.Print("results:", #L.listings, Finder.updated and ("(" .. (time() - Finder.updated) .. " s ago)") or "(none yet - search in the Group Finder)")
     local first = L.listings[1]
     if first then

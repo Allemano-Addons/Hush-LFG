@@ -281,7 +281,7 @@ local function updateChrome()
         end
     end
     local finder = L.Finder.updated and ("Finder updated " .. ago(time() - L.Finder.updated) .. (time() - L.Finder.updated < 60 and "" or " ago"))
-        or "Finder: press Refresh Finder"
+        or (L.Finder.Ready() and "Finder: press Refresh Finder" or "Search once in the Group Finder (I), then Refresh works here")
     frame.status:SetText(finder .. " · chat is live")
     local merged = 0
     for _, e in ipairs(items) do if e.source == "both" then merged = merged + 1 end end
@@ -338,7 +338,12 @@ local function queueRefresh()
         UI.Refresh()
     end)
 end
-L.OnFinderUpdate = queueRefresh
+local armRefresh
+L.OnFinderUpdate = function()
+    queueRefresh()
+    -- The first results of the session mean Blizzard's button can search now.
+    if frame and frame:IsShown() then armRefresh() end
+end
 if Hush.Feed then
     Hush.Feed.OnPost(function(p) if p.cat == "lfg" then queueRefresh() end end)
 end
@@ -347,10 +352,11 @@ end
 -- Refresh Finder: clicks Blizzard's refresh button (secure, so it counts as your click).
 -- ---------------------------------------------------------------------------
 
-local function armRefresh()
+function armRefresh() -- declared local above
     local b = frame.refreshBtn
     if not b.secure then return end
-    if _G[REFRESH_BUTTON] then
+    -- Blizzard's button only searches once the Group Finder knows what to search for.
+    if _G[REFRESH_BUTTON] and L.Finder.Ready() then
         b.secure:Arm("/click " .. REFRESH_BUTTON)
     else
         b.secure:Disarm()
@@ -572,11 +578,11 @@ local function build()
     end)
 
     frame.refreshBtn = W.Button(content, "Refresh Finder", "default", function()
-        -- Only runs when the secure click is not armed (Blizzard's button is missing, or in combat).
+        -- Only runs when the secure click is not armed (not ready yet, or in combat).
         if InCombatLockdown() then
             L.Print("Refresh Finder works out of combat.")
         else
-            L.Print("Open the Group Finder once (it loads its search button), then Refresh Finder works from here.")
+            L.Print("Search once in the Group Finder (I) this session - after that, Refresh Finder works from here.")
         end
     end)
     frame.refreshBtn:SetHeight(32)
@@ -584,6 +590,12 @@ local function build()
     frame.refreshBtn:SetPoint("TOPRIGHT", -PAD, -40)
     frame.refreshBtn.secure = W.SecureMacroOverlay(frame.refreshBtn, function()
         frame.status:SetText("Searching the Group Finder...")
+        local clicked = time()
+        C_Timer.After(6, function()
+            if frame:IsShown() and (L.Finder.updated or 0) < clicked then
+                frame.status:SetText("No answer - search once in the Group Finder (I)")
+            end
+        end)
     end, { upOnly = true })
 
     frame.roleBtn = W.Button(content, "My role", "default", function()

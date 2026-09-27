@@ -23,3 +23,5 @@
 - Sidebar filters, saved between sessions: Dungeon / Raid (the dungeons in the list), Level (any, within 2 or 5 of your level), Source (Chat + Finder, Chat only, Finder only), Role (groups that need it / players who play it) and classes to hide (the real class icons; a group with any member of a hidden class is hidden, as is a player of that class). Reset filters.
 - The tab counts follow the filters; the footer says how many are hidden by filters.
 - `/hlfg probe` also shows what Blizzard's browse frame knows (to make Refresh Finder work without a first search in the Group Finder).
+- Refresh Finder knows when Blizzard's Group Finder is ready (you searched there once this session) and says so until then ("Search once in the Group Finder (I)"), instead of clicking a button that cannot search. It never sets Blizzard's choices itself (that would get the searches blocked). A "No answer" notice after 6 s.
+- `/hlfg probe` also looks for a micro button or slash command that opens the Group Finder.
