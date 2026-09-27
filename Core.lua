@@ -20,6 +20,7 @@ local DEFAULTS = {
     levels = "any",         -- "any" / 2 / 5: within this many levels of yours
     role = "any",           -- "any" / "tank" / "healer" / "dps": groups that need it, players who play it
     hiddenClasses = {},     -- classFile -> true: hide groups/players with this class
+    autoOpen = true,        -- open Hush LFG when you search in the Group Finder
     lfgWindow = {},
 }
 
@@ -59,6 +60,9 @@ SlashCmdList.HUSHLFG = function(msg)
         L.Finder.Probe()
     elseif cmd == "search" then
         L.Finder.Search(tonumber(rest))
+    elseif cmd == "auto" then
+        L.db.autoOpen = not L.db.autoOpen
+        L.Print("Open Hush LFG when you search in the Group Finder:", L.db.autoOpen and "on" or "off")
     elseif cmd == "side" then
         L.Finder.Side()
     elseif cmd == "frames" then
@@ -66,6 +70,6 @@ SlashCmdList.HUSHLFG = function(msg)
     elseif cmd == "dump" then
         L.Finder.Dump()
     else
-        L.Print("/hlfg - open the window, /hlfg probe - what the Group Finder lets us read, /hlfg dump - list the results")
+        L.Print("/hlfg - open the window, /hlfg auto - open it when you search in the Group Finder (on/off), /hlfg probe - what the Group Finder lets us read, /hlfg dump - list the results")
     end
 end

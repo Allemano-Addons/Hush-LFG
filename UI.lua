@@ -365,7 +365,25 @@ local function queueRefresh()
     end)
 end
 local armRefresh
+-- Auto-open: searching in Blizzard's Group Finder opens Hush LFG, once per time you open the
+-- Group Finder (close Hush LFG and it stays closed until you open the Group Finder again).
+local openedThisVisit, parentHooked = false, false
+
+local function autoOpen()
+    local parent = _G.LFGParentFrame
+    if not (L.db.autoOpen and parent) or InCombatLockdown() then return end
+    if not parentHooked then
+        parentHooked = true
+        parent:HookScript("OnShow", function() openedThisVisit = false end)
+    end
+    if parent:IsShown() and not openedThisVisit then
+        openedThisVisit = true
+        if not (frame and frame:IsShown()) then UI.Toggle() end
+    end
+end
+
 L.OnFinderUpdate = function()
+    autoOpen()
     queueRefresh()
     -- The first results of the session mean Blizzard's button can search now.
     if frame and frame:IsShown() then armRefresh() end

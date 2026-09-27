@@ -30,3 +30,4 @@
 - Refresh Finder also switches the Group Finder to its search tab (the micro button opens the "list yourself" tab).
 - Refresh Finder re-arms a moment after the Group Finder opens or closes, so the rest of its own click (search tab, refresh) is not cut short.
 - Refresh Finder before the first search only opens the Group Finder: Forever's side buttons replace the old tabs, so the search tab can't be chosen for you. Click the magnifier and search once; after that Refresh Finder refreshes all session.
+- Searching in Blizzard's Group Finder opens Hush LFG (once per time you open the Group Finder, never in combat). `/hlfg auto` turns it on/off.
