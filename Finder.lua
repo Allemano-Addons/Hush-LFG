@@ -364,4 +364,31 @@ function Finder.Frames()
     for i = 1, #out, 6 do
         L.Print("  " .. table.concat(out, ", ", i, min(i + 5, #out)))
     end
+
+    -- The tabs: their text, and which one is selected (open the search tab before running this).
+    local tabs = {}
+    for i = 1, 6 do
+        local t = _G["LFGParentFrameTab" .. i]
+        if t then tabs[#tabs + 1] = i .. "=" .. tostring(t.GetText and t:GetText() or "?") end
+    end
+    L.Print("tabs:", table.concat(tabs, ", "), "· selected:", tostring(root.selectedTab),
+        "· shown panels:", (_G.LFGListingFrame and _G.LFGListingFrame:IsShown() and "Listing " or "")
+        .. (_G.LFGBrowseFrame and _G.LFGBrowseFrame:IsShown() and "Browse " or "")
+        .. (_G.LFGWhoListFrame and _G.LFGWhoListFrame:IsShown() and "Who" or ""))
+
+    -- Shown buttons elsewhere with Tab / LFG / Group in the name (the side buttons).
+    local side = {}
+    pcall(function()
+        for k, v in pairs(_G) do
+            if type(k) == "string" and type(v) == "table" and v.GetObjectType and (k:find("Tab") or k:find("Side"))
+                and (k:find("LFG") or k:find("Group") or k:find("Finder")) and not k:find("^LFGParentFrameTab") then
+                local ok, kind = pcall(v.GetObjectType, v)
+                if ok and (kind == "Button" or kind == "CheckButton") then
+                    side[#side + 1] = k .. (v:IsShown() and "" or "(hidden)")
+                end
+            end
+        end
+    end)
+    sort(side)
+    L.Print("other tabs:", #side > 0 and table.concat(side, ", ") or "none")
 end
