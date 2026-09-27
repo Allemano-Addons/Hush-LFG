@@ -25,3 +25,5 @@
 - `/hlfg probe` also shows what Blizzard's browse frame knows (to make Refresh Finder work without a first search in the Group Finder).
 - Refresh Finder knows when Blizzard's Group Finder is ready (you searched there once this session) and says so until then ("Search once in the Group Finder (I)"), instead of clicking a button that cannot search. It never sets Blizzard's choices itself (that would get the searches blocked). A "No answer" notice after 6 s.
 - `/hlfg probe` also looks for a micro button or slash command that opens the Group Finder.
+- Listings for several dungeons ("5 activities") are read with all their dungeons: the dungeon filter and search match any of them, the row shows the dungeon you filter on plus "+4" (hover for the list).
+- Until the Group Finder is ready, Refresh Finder opens it for you (a secure click on its micro button, `LFDMicroButton`) and tries a refresh right away.

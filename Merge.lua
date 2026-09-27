@@ -52,6 +52,7 @@ local function fromListing(l)
         kind = l.numMembers > 1 and "group" or "player",
         source = "finder",
         activity = l.activity,
+        activities = l.activities or { l.activity },
         leader = l.leader or leader.name or "?",
         leaderClass = leader.class,
         text = (l.comment and l.comment ~= "" and l.comment) or (l.title ~= "" and l.title) or nil,
@@ -99,6 +100,7 @@ local function fromPost(p)
         age = time() - p.last,
         post = p,
     }
+    e.activities = e.activity and { e.activity } or {}
     if e.kind == "group" then
         -- Chat says which roles are wanted, not how many: one open slot per role.
         e.missing = {}
@@ -127,7 +129,10 @@ function L.Build()
                 if not e.post then
                     e.source, e.post, e.chat = "both", p, p.text
                     e.age = min(e.age, time() - p.last)
-                    e.activity = e.activity or L.DetectActivity(p.plain)
+                    if not e.activity then
+                        e.activity = L.DetectActivity(p.plain)
+                        if e.activity then e.activities = { e.activity } end
+                    end
                     if not e.text then e.text = p.text end
                 end
             else
@@ -155,7 +160,14 @@ end
 function L.Passes(e, db, level)
     if db.source == "chat" and e.source == "finder" then return false end
     if db.source == "finder" and e.source == "chat" then return false end
-    if db.activity ~= "all" and e.activity ~= db.activity then return false end
+    -- A listing for several dungeons counts for each of them.
+    if db.activity ~= "all" then
+        local found = false
+        for _, a in ipairs(e.activities or {}) do
+            if a == db.activity then found = true break end
+        end
+        if not found then return false end
+    end
     -- Levels: only entries with a known level can be filtered out.
     if type(db.levels) == "number" and level then
         local lo, hi = e.minLevel or e.level, e.maxLevel or e.level

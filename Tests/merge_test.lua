@@ -74,3 +74,10 @@ db.hiddenClasses = {}; db.levels = 2
 check(L.Passes({ kind = "player", members = {}, level = 30, source = "finder" }, db, 20) == false, "level 30 is too far from 20")
 check(L.Passes({ kind = "player", members = {}, source = "chat" }, db, 20) == true, "unknown level stays")
 print(bad == 0 and "FILTERS OK" or (bad .. " filter checks wrong"))
+-- Several dungeons in one listing
+local multi = { kind = "group", activities = { "Ragefire Chasm", "Shadowfang Keep", "Deadmines" }, members = {}, source = "finder" }
+db.levels = "any"; db.activity = "Shadowfang Keep"
+check(L.Passes(multi, db, 20) == true, "a listing for 3 dungeons passes the filter for its 2nd")
+db.activity = "Wailing Caverns"
+check(L.Passes(multi, db, 20) == false, "...but not for a dungeon it does not have")
+print(bad == 0 and "MULTI OK" or (bad .. " wrong"))

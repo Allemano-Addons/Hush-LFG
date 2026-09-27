@@ -14,6 +14,7 @@ local WIDTH, HEIGHT, SIDE_W = 1000, 620, 250
 local ROW_H, PAD, SLOT = 80, 16, 24
 local MAX_SLOTS = 8
 local REFRESH_BUTTON = "LFGBrowseFrameRefreshButton"
+local OPEN_BUTTON = "LFDMicroButton" -- opens the Group Finder on Forever
 
 local ROLES = { "none", "tank", "healer", "dps" }
 local ROLE_LABEL = { none = "My role: none", tank = "My role: Tank", healer = "My role: Healer", dps = "My role: DPS" }
@@ -61,7 +62,10 @@ end
 
 local function matchesSearch(e, q)
     if q == "" then return true end
-    return (e.activity and strlower(e.activity):find(q, 1, true)) or strlower(e.leader):find(q, 1, true)
+    for _, a in ipairs(e.activities or {}) do
+        if strlower(a):find(q, 1, true) then return true end
+    end
+    return strlower(e.leader):find(q, 1, true)
         or (e.text and strlower(e.text):find(q, 1, true)) or (e.chat and strlower(e.chat):find(q, 1, true))
 end
 
@@ -144,8 +148,13 @@ local function createRow()
 
     r.title = W.Text(r, "heading", 2, "text")
     r.title:SetPoint("TOPLEFT", PAD, -14)
+    -- "+4" when a listing is for several dungeons; hover it for all of them.
+    r.more = tag(r)
+    r.more:SetPoint("LEFT", r.title, "RIGHT", 6, 0)
+    r.more:EnableMouse(true)
+    r.more:SetScript("OnEnter", function(self) if self.tip then W.ShowTooltip(self, self.tip) end end)
+    r.more:SetScript("OnLeave", function() W.HideTooltip() end)
     r.src = tag(r)
-    r.src:SetPoint("LEFT", r.title, "RIGHT", 8, 0)
     r.need = tag(r, true)
     r.need:SetLabel("Needs your role")
     r.need:SetPoint("LEFT", r.src, "RIGHT", 6, 0)
@@ -178,7 +187,22 @@ end
 
 local function fillRow(r, e)
     r.entry = e
-    r.title:SetText(e.activity or (e.kind == "group" and "Group" or "Any dungeon"))
+    -- Title: the dungeon you filter on when the listing has it, else the first one.
+    local acts = e.activities or {}
+    local shownName = e.activity
+    if L.db.activity ~= "all" then
+        for _, a in ipairs(acts) do if a == L.db.activity then shownName = a end end
+    end
+    r.title:SetText(shownName or (e.kind == "group" and "Group" or "Any dungeon"))
+    r.more:SetShown(#acts > 1)
+    r.src:ClearAllPoints()
+    if #acts > 1 then
+        r.more:SetLabel("+" .. (#acts - 1))
+        r.more.tip = table.concat(acts, "\n")
+        r.src:SetPoint("LEFT", r.more, "RIGHT", 6, 0)
+    else
+        r.src:SetPoint("LEFT", r.title, "RIGHT", 8, 0)
+    end
     r.src:SetLabel(SOURCE_LABEL[e.source])
     r.need:SetShown(e.needsRole)
     r.leader:SetText(e.leader)
@@ -307,9 +331,11 @@ function UI.Refresh()
     state.filtered = 0
     local seen = {}
     for _, e in ipairs(L.Build()) do
-        if e.activity and not seen[e.activity] then
-            seen[e.activity] = true
-            activityNames[#activityNames + 1] = e.activity
+        for _, a in ipairs(e.activities or {}) do
+            if not seen[a] then
+                seen[a] = true
+                activityNames[#activityNames + 1] = a
+            end
         end
         if matchesSearch(e, q) then
             if L.Passes(e, L.db, level) then
@@ -356,8 +382,12 @@ function armRefresh() -- declared local above
     local b = frame.refreshBtn
     if not b.secure then return end
     -- Blizzard's button only searches once the Group Finder knows what to search for.
+    -- Until then, open the Group Finder with its micro button (and try its refresh too).
+    local parent = _G.LFGParentFrame
     if _G[REFRESH_BUTTON] and L.Finder.Ready() then
         b.secure:Arm("/click " .. REFRESH_BUTTON)
+    elseif _G[OPEN_BUTTON] and not (parent and parent:IsShown()) then
+        b.secure:Arm("/click " .. OPEN_BUTTON .. (_G[REFRESH_BUTTON] and ("\n/click " .. REFRESH_BUTTON) or ""))
     else
         b.secure:Disarm()
     end
@@ -659,6 +689,13 @@ local function build()
     end
     local events = CreateFrame("Frame")
     events:SetScript("OnEvent", function() if frame:IsShown() then armRefresh() end end)
+    -- Re-arm when Blizzard's Group Finder opens or closes (the micro button toggles it).
+    local parent = _G.LFGParentFrame
+    if parent and parent.HookScript then
+        local function rearm() if frame:IsShown() and not InCombatLockdown() then armRefresh() end end
+        parent:HookScript("OnShow", rearm)
+        parent:HookScript("OnHide", rearm)
+    end
     frame:SetScript("OnShow", function()
         token = token + 1
         pcall(events.RegisterEvent, events, "PLAYER_REGEN_ENABLED")

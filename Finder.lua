@@ -90,14 +90,24 @@ local function readListing(id)
         delisted = get(info, "isDelisted"),
         members = {},
     }
-    local aid = get(info, "activityID")
-    if not aid then
-        local ids = get(info, "activityIDs")
-        if type(ids) == "table" then aid = get(ids, 1) end
+    -- A listing can be for several dungeons ("5 activities"): keep them all.
+    local ids = {}
+    local one = get(info, "activityID")
+    if one then ids[1] = one end
+    local list = get(info, "activityIDs")
+    if type(list) == "table" then
+        pcall(function()
+            for _, aid in ipairs(list) do
+                if not isSecret(aid) and aid ~= one then ids[#ids + 1] = aid end
+            end
+        end)
     end
-    l.activityID = aid
-    local a = activity(aid)
-    if a then l.activity, l.minLevel, l.maxLevel = a.name, a.minLevel, a.maxLevel end
+    l.activities = {}
+    for _, aid in ipairs(ids) do
+        local a = activity(aid)
+        if a and a.name then l.activities[#l.activities + 1] = a.name end
+    end
+    l.activity = l.activities[1]
 
     -- Members (the classic Group Finder has one entry per player).
     for i = 1, l.numMembers do
