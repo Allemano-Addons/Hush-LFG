@@ -40,3 +40,4 @@
 - Removed the test commands (`/hlfg search`, `frames`, `side`); `/hlfg probe` and `/hlfg dump` stay for troubleshooting.
 - Requires Hush 0.1.28 (`Hush.OpenWhisper(name, text)`, `Hush.RequestInvite`).
 - `Tests/join_test.lua`: offline test of the join whisper.
+- Fix: the Group Finder tab only appeared after the first search (Blizzard's window loads after Hush LFG); it is hooked as soon as the window loads.

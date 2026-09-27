@@ -38,13 +38,20 @@ end
 
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
-frame:SetScript("OnEvent", function(_, _, name)
-    if name ~= addonName then return end
-    if type(HushLFGDB) ~= "table" then HushLFGDB = {} end
-    fill(HushLFGDB, DEFAULTS)
-    L.db = HushLFGDB
-    frame:UnregisterEvent("ADDON_LOADED")
-    L.Finder.Init()
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:SetScript("OnEvent", function(_, event, name)
+    if event == "ADDON_LOADED" and name == addonName then
+        if type(HushLFGDB) ~= "table" then HushLFGDB = {} end
+        fill(HushLFGDB, DEFAULTS)
+        L.db = HushLFGDB
+        L.Finder.Init()
+    end
+    -- Blizzard's Group Finder window loads later (on demand): hook it as soon as it exists,
+    -- so the Hush LFG tab is there the first time you open it.
+    if L.db and L.HookGroupFinder then
+        L.HookGroupFinder()
+        if L.groupFinderHooked then frame:UnregisterAllEvents() end
+    end
 end)
 
 -- ---------------------------------------------------------------------------
