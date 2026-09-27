@@ -700,7 +700,13 @@ local function build()
     -- Re-arm when Blizzard's Group Finder opens or closes (the micro button toggles it).
     local parent = _G.LFGParentFrame
     if parent and parent.HookScript then
-        local function rearm() if frame:IsShown() and not InCombatLockdown() then armRefresh() end end
+        -- Later, not right away: the Group Finder can open in the middle of our own click,
+        -- and changing the macro then could cut the rest of it (tab, refresh) short.
+        local function rearm()
+            C_Timer.After(0.3, function()
+                if frame:IsShown() and not InCombatLockdown() then armRefresh() end
+            end)
+        end
         parent:HookScript("OnShow", rearm)
         parent:HookScript("OnHide", rearm)
     end
