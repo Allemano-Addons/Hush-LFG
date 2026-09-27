@@ -58,6 +58,6 @@ SlashCmdList.HUSHLFG = function(msg)
     elseif cmd == "dump" then
         L.Finder.Dump()
     else
-        L.Print("/hlfg probe - what the Group Finder lets us read, /hlfg search [category id] - search now, /hlfg dump - list the results")
+        L.Print("/hlfg probe - what the Group Finder lets us read, /hlfg dump - list the results")
     end
 end

@@ -127,39 +127,10 @@ local function categories()
     return list
 end
 
--- The dungeon category, else the first one.
-local function defaultCategory()
-    local list = categories()
-    for _, c in ipairs(list) do
-        if type(c.name) == "string" and strlower(c.name):find("dungeon") then return c.id end
-    end
-    return list[1] and list[1].id
-end
-
--- Must be called from a click or a slash command.
-function Finder.Search(categoryID)
-    if not (C and C.Search) then L.Print("The Group Finder is not available.") return end
-    categoryID = categoryID or defaultCategory()
-    if not categoryID then L.Print("No Group Finder categories yet - open the Group Finder once and try again.") return end
-    local activities = call(C.GetAvailableActivities, categoryID)
-    -- Classic signature (category, activityIDs) first, then the retail one (category, filter...).
-    local how = "classic"
-    local ok = type(activities) == "table" and pcall(C.Search, categoryID, activities)
-    if not ok then how = "retail"; ok = pcall(C.Search, categoryID, 0, 0) end
-    if not ok then how = "plain"; ok = pcall(C.Search, categoryID) end
-    Finder.lastCategory = categoryID
-    Finder.pending = ok and GetTime() or nil
-    L.Print(ok and ("Searching category %d (%s, %d activities)..."):format(categoryID, how,
-        type(activities) == "table" and #activities or 0) or "The search was refused.")
-    -- Tell the player if no answer comes.
-    if ok then
-        C_Timer.After(10, function()
-            if Finder.pending and GetTime() - Finder.pending >= 9 then
-                Finder.pending = nil
-                L.Print("No answer from the Group Finder after 10 s.")
-            end
-        end)
-    end
+-- C_LFGList.Search is protected on Forever (an addon call is blocked, even from a slash
+-- command). Searches come from Blizzard's own Group Finder; we only read the results.
+function Finder.Search()
+    L.Print("Addons may not search the Group Finder themselves. Search in the Group Finder (I) - Hush LFG reads the results.")
 end
 
 -- ---------------------------------------------------------------------------
@@ -171,10 +142,8 @@ events:SetScript("OnEvent", function(_, event, ...)
     local ok, err = pcall(function(...)
         if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" then
             readAll()
-            if Finder.pending then
-                Finder.pending = nil
-                L.Print(("Got %d listings. /hlfg dump to list them."):format(#L.listings))
-            end
+            -- Step 1 only (test): confirm that Blizzard's searches reach us.
+            L.Print(("Read %d listings from the Group Finder. /hlfg dump to list them."):format(#L.listings))
         elseif event == "LFG_LIST_SEARCH_RESULT_UPDATED" then
             readOne(...)
         elseif event == "LFG_LIST_SEARCH_FAILED" then
@@ -209,7 +178,25 @@ function Finder.Probe()
     L.Print("class icons: atlas classicon-warrior", tostring(atlasExists("classicon-warrior")),
         "· groupfinder-icon-class-warrior", tostring(atlasExists("groupfinder-icon-class-warrior")),
         "· CLASS_ICON_TCOORDS", tostring(CLASS_ICON_TCOORDS ~= nil))
-    L.Print("results:", #L.listings, Finder.updated and ("(" .. (time() - Finder.updated) .. " s ago)") or "(no search yet - /hlfg search)")
+    -- Blizzard's Group Finder windows and search buttons (for a Refresh button of our own).
+    local function path(root, ...)
+        local f = _G[root]
+        for i = 1, select("#", ...) do
+            if type(f) ~= "table" then return false end
+            f = f[select(i, ...)]
+        end
+        return type(f) == "table"
+    end
+    local found = {}
+    for _, check in ipairs({
+        { "LFGListFrame" }, { "LFGListFrame", "SearchPanel", "RefreshButton" }, { "LFGListFrame", "SearchPanel", "SearchBox" },
+        { "PVEFrame" }, { "LFGBrowseFrame" }, { "LFGBrowseFrame", "RefreshButton" }, { "LFGBrowseFrameRefreshButton" },
+        { "LFGParentFrame" }, { "LFGListingFrame" },
+    }) do
+        if path(unpack(check)) then found[#found + 1] = table.concat(check, ".") end
+    end
+    L.Print("frames:", #found > 0 and table.concat(found, ", ") or "none loaded (open the Group Finder once, then probe again)")
+    L.Print("results:", #L.listings, Finder.updated and ("(" .. (time() - Finder.updated) .. " s ago)") or "(none yet - search in the Group Finder)")
     local first = L.listings[1]
     if first then
         local info = call(C.GetSearchResultInfo, first.id)
@@ -243,7 +230,7 @@ local function describe(l)
 end
 
 function Finder.Dump()
-    if #L.listings == 0 then L.Print("No results. /hlfg search first (or open the Group Finder).") return end
+    if #L.listings == 0 then L.Print("No results yet. Search in the Group Finder first.") return end
     L.Print(#L.listings, "listings:")
     for i, l in ipairs(L.listings) do
         if i > 25 then L.Print("...", #L.listings - 25, "more") break end
