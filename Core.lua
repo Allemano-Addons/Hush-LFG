@@ -21,6 +21,8 @@ local DEFAULTS = {
     role = "any",           -- "any" / "tank" / "healer" / "dps": groups that need it, players who play it
     hiddenClasses = {},     -- classFile -> true: hide groups/players with this class
     autoOpen = true,        -- open Hush LFG when you search in the Group Finder
+    sideTab = true,         -- a Hush LFG button in the Group Finder window
+    joinMessage = "",       -- the "Ask to join" whisper ("" = the default text)
     lfgWindow = {},
 }
 
@@ -52,24 +54,20 @@ end)
 SLASH_HUSHLFG1 = "/hlfg"
 SLASH_HUSHLFG2 = "/hushlfg"
 SlashCmdList.HUSHLFG = function(msg)
-    local cmd, rest = strtrim(msg or ""):match("^(%S*)%s*(.-)$")
-    cmd = strlower(cmd or "")
+    local cmd = strlower(strtrim(msg or ""):match("^(%S*)") or "")
     if cmd == "" then
         L.UI.Toggle()
-    elseif cmd == "probe" then
-        L.Finder.Probe()
-    elseif cmd == "search" then
-        L.Finder.Search(tonumber(rest))
+    elseif cmd == "options" or cmd == "settings" then
+        Hush.OpenSettings("lfg")
     elseif cmd == "auto" then
         L.db.autoOpen = not L.db.autoOpen
         L.Print("Open Hush LFG when you search in the Group Finder:", L.db.autoOpen and "on" or "off")
-    elseif cmd == "side" then
-        L.Finder.Side()
-    elseif cmd == "frames" then
-        L.Finder.Frames()
+    elseif cmd == "probe" then
+        L.Finder.Probe()
     elseif cmd == "dump" then
         L.Finder.Dump()
     else
-        L.Print("/hlfg - open the window, /hlfg auto - open it when you search in the Group Finder (on/off), /hlfg probe - what the Group Finder lets us read, /hlfg dump - list the results")
+        L.Print("/hlfg - open the window, /hlfg options, /hlfg auto - open it when you search in the Group Finder (on/off), "
+            .. "/hlfg probe - what the Group Finder lets us read, /hlfg dump - list the results")
     end
 end

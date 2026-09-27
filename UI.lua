@@ -168,17 +168,18 @@ local function createRow()
     r.meta = W.Text(r, "regular", -1, "textFaint")
     r.meta:SetPoint("TOPLEFT", PAD, -58)
 
-    -- Buttons, right to left: Whisper, Invite (players).
+    -- Buttons, right to left: Whisper, then the action: Invite (players), Request invite
+    -- (listed groups) or Ask to join (chat groups: a ready whisper to edit and send).
     r.whisper = W.Button(r, "Whisper", "default", function()
         if r.entry then Hush.OpenWhisper(r.entry.leader) end
     end)
     r.whisper:SetHeight(28)
     r.whisper:SetPoint("RIGHT", -PAD, 0)
-    r.invite = W.Button(r, "Invite", "default", function()
-        if r.entry then Hush.InviteToGroup(r.entry.leader) end
+    r.action = W.Button(r, "Invite", "default", function()
+        if r.entry then L.Act(r.entry) end
     end)
-    r.invite:SetHeight(28)
-    r.invite:SetPoint("RIGHT", r.whisper, "LEFT", -8, 0)
+    r.action:SetHeight(28)
+    r.action:SetPoint("RIGHT", r.whisper, "LEFT", -8, 0)
 
     r.slots = {}
     for i = 1, MAX_SLOTS do r.slots[i] = createSlot(r) end
@@ -221,8 +222,9 @@ local function fillRow(r, e)
     meta[#meta + 1] = ago(e.age)
     r.meta:SetText(table.concat(meta, " · "))
 
-    r.invite:SetShown(e.kind == "player")
-    local leftButton = e.kind == "player" and r.invite or r.whisper
+    r.action.text:SetText(L.ActionLabel(e))
+    r.action:SetWidth(r.action.text:GetStringWidth() + 28)
+    local leftButton = r.action
 
     -- Slots: members' class icons, then open roles (groups) or the roles a player can play.
     local n = 0
@@ -254,7 +256,7 @@ local function fillRow(r, e)
     end
     for i = n + 1, MAX_SLOTS do r.slots[i]:Hide() end
     -- The comment gets the room left of the slots.
-    local right = 16 + (e.kind == "player" and 180 or 100) + n * (SLOT + 4)
+    local right = 28 + r.whisper:GetWidth() + r.action:GetWidth() + n * (SLOT + 4)
     r.text:SetWidth(max(60, listArea:GetWidth() - PAD - right - r.leader:GetStringWidth() - 8 - PAD))
 end
 
@@ -527,6 +529,14 @@ local function buildFilters(side)
     updateClassButtons()
 end
 
+-- After the filters were changed elsewhere (the settings page).
+function UI.FiltersChanged()
+    if not frame then return end
+    updateClassButtons()
+    state.offset = 0
+    UI.Refresh()
+end
+
 -- ---------------------------------------------------------------------------
 -- Build
 -- ---------------------------------------------------------------------------
@@ -617,6 +627,8 @@ local function build()
 
     local close = W.IconButton(content, "close", 24, "Close", function() frame:Hide() end, "x")
     close:SetPoint("TOPRIGHT", -8, -8)
+    local settings = W.IconButton(content, "settings", 24, "LFG settings", function() Hush.OpenSettings("lfg") end)
+    settings:SetPoint("RIGHT", close, "LEFT", -4, 0)
 
     local search = W.EditBox(content, "Search dungeon, leader, comment", 32)
     search:SetPoint("TOPLEFT", PAD, -40)
@@ -838,6 +850,7 @@ function L.HookGroupFinder()
     parent:HookScript("OnShow", function(self)
         -- A frame later: Blizzard's side tabs are placed by then.
         C_Timer.After(0, function()
+            if not L.db.sideTab then return end
             if not sideTab then
                 createSideTab(self)
             elseif not sideTab.placed then
@@ -845,5 +858,15 @@ function L.HookGroupFinder()
             end
         end)
     end)
-    if parent:IsShown() and not sideTab then createSideTab(parent) end
+    if parent:IsShown() and L.db.sideTab and not sideTab then createSideTab(parent) end
+end
+
+-- The settings toggle.
+function L.UpdateSideTab()
+    local parent = _G.LFGParentFrame
+    if sideTab then
+        sideTab:SetShown(L.db.sideTab)
+    elseif L.db.sideTab and parent and parent:IsShown() then
+        createSideTab(parent)
+    end
 end

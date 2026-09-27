@@ -9,4 +9,6 @@
 Core.lua
 Finder.lua
 Merge.lua
+Join.lua
 UI.lua
+Options.lua

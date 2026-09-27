@@ -32,3 +32,11 @@
 - Refresh Finder before the first search only opens the Group Finder: Forever's side buttons replace the old tabs, so the search tab can't be chosen for you. Click the magnifier and search once; after that Refresh Finder refreshes all session.
 - Searching in Blizzard's Group Finder opens Hush LFG (once per time you open the Group Finder, never in combat). `/hlfg auto` turns it on/off.
 - A fourth side tab in Blizzard's Group Finder window (under the eye, magnifier and people) with the Hush logo opens Hush LFG.
+
+### Step 4 – Joining and settings
+- Every row has an action next to Whisper: **Invite** (players), **Request invite** (listed groups, like the Group Finder's own button) or **Ask to join** (groups from chat: opens Hush with a ready whisper to edit and send - never sent by itself).
+- The "Ask to join" text is a template: `{role} {class} {level} {dungeon} {leader}`; the default is "Hi! Tank Warrior lvl 20 here - room for me in Wailing Caverns?" (no role chosen: the word is left out).
+- "LFG" page in the Hush settings (`/hlfg options` or the gear in the window): open with the Group Finder, the Group Finder tab on/off, the join whisper with a live preview and "Default text", Reset filters.
+- Removed the test commands (`/hlfg search`, `frames`, `side`); `/hlfg probe` and `/hlfg dump` stay for troubleshooting.
+- Requires Hush 0.1.28 (`Hush.OpenWhisper(name, text)`, `Hush.RequestInvite`).
+- `Tests/join_test.lua`: offline test of the join whisper.
