@@ -29,3 +29,4 @@
 - Until the Group Finder is ready, Refresh Finder opens it for you (a secure click on its micro button, `LFDMicroButton`) and tries a refresh right away.
 - Refresh Finder also switches the Group Finder to its search tab (the micro button opens the "list yourself" tab).
 - Refresh Finder re-arms a moment after the Group Finder opens or closes, so the rest of its own click (search tab, refresh) is not cut short.
+- Refresh Finder before the first search only opens the Group Finder: Forever's side buttons replace the old tabs, so the search tab can't be chosen for you. Click the magnifier and search once; after that Refresh Finder refreshes all session.

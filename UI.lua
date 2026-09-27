@@ -15,7 +15,6 @@ local ROW_H, PAD, SLOT = 80, 16, 24
 local MAX_SLOTS = 8
 local REFRESH_BUTTON = "LFGBrowseFrameRefreshButton"
 local OPEN_BUTTON = "LFDMicroButton" -- opens the Group Finder on Forever
-local SEARCH_TAB = "LFGParentFrameTab2" -- its search (browse) tab
 
 local ROLES = { "none", "tank", "healer", "dps" }
 local ROLE_LABEL = { none = "My role: none", tank = "My role: Tank", healer = "My role: Healer", dps = "My role: DPS" }
@@ -306,7 +305,7 @@ local function updateChrome()
         end
     end
     local finder = L.Finder.updated and ("Finder updated " .. ago(time() - L.Finder.updated) .. (time() - L.Finder.updated < 60 and "" or " ago"))
-        or (L.Finder.Ready() and "Finder: press Refresh Finder" or "Press Refresh Finder to open the Group Finder search")
+        or (L.Finder.Ready() and "Finder: press Refresh Finder" or "First search: open the Group Finder, click the magnifier, search once")
     frame.status:SetText(finder .. " · chat is live")
     local merged = 0
     for _, e in ipairs(items) do if e.source == "both" then merged = merged + 1 end end
@@ -383,19 +382,14 @@ function armRefresh() -- declared local above
     local b = frame.refreshBtn
     if not b.secure then return end
     -- Blizzard's button only searches once the Group Finder knows what to search for.
-    -- Until then: open the Group Finder (its micro button opens the "list yourself" tab),
-    -- switch to its search tab, and refresh.
+    -- Until then it opens the Group Finder for you; you pick its search tab (the magnifier)
+    -- and search once. Forever's side buttons replace the old tabs, and clicking those
+    -- hidden tabs does nothing, so we can't switch the tab for you.
     local parent = _G.LFGParentFrame
     if _G[REFRESH_BUTTON] and L.Finder.Ready() then
         b.secure:Arm("/click " .. REFRESH_BUTTON)
-        return
-    end
-    local lines = {}
-    if _G[OPEN_BUTTON] and not (parent and parent:IsShown()) then lines[#lines + 1] = "/click " .. OPEN_BUTTON end
-    if _G[SEARCH_TAB] then lines[#lines + 1] = "/click " .. SEARCH_TAB end
-    if _G[REFRESH_BUTTON] then lines[#lines + 1] = "/click " .. REFRESH_BUTTON end
-    if #lines > 0 then
-        b.secure:Arm(table.concat(lines, "\n"))
+    elseif _G[OPEN_BUTTON] and not (parent and parent:IsShown()) then
+        b.secure:Arm("/click " .. OPEN_BUTTON)
     else
         b.secure:Disarm()
     end
@@ -620,7 +614,7 @@ local function build()
         if InCombatLockdown() then
             L.Print("Refresh Finder works out of combat.")
         else
-            L.Print("Search once in the Group Finder (I) this session - after that, Refresh Finder works from here.")
+            L.Print("In the Group Finder: click the magnifier (Group Browser) and search once - after that, Refresh Finder works from here all session.")
         end
     end)
     frame.refreshBtn:SetHeight(32)
@@ -631,7 +625,7 @@ local function build()
         local clicked = time()
         C_Timer.After(6, function()
             if frame:IsShown() and (L.Finder.updated or 0) < clicked then
-                frame.status:SetText("No answer - pick a dungeon in the Group Finder and search once")
+                frame.status:SetText("No answer - click the magnifier in the Group Finder and search once")
             end
         end)
     end, { upOnly = true })
