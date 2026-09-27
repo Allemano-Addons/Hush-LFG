@@ -23,8 +23,9 @@ local SOURCE_LABEL = { finder = "Finder", chat = "Chat", both = "Chat + Finder" 
 
 local frame, listArea, scrollbar, rowPool
 local tabs = {}
-local state = { tab = "group", search = "", offset = 0 }
+local state = { tab = "group", search = "", offset = 0, filtered = 0 }
 local items, counts = {}, { group = 0, player = 0 }
+local activityNames = {} -- dungeons in the current list, for the dropdown
 
 -- ---------------------------------------------------------------------------
 -- Helpers
@@ -284,21 +285,44 @@ local function updateChrome()
     frame.status:SetText(finder .. " · chat is live")
     local merged = 0
     for _, e in ipairs(items) do if e.source == "both" then merged = merged + 1 end end
-    frame.footer:SetText(("%d %s%s"):format(#items, state.tab == "group" and "groups" or "players",
-        merged > 0 and (" · " .. merged .. " in both chat and Finder") or ""))
+    frame.footer:SetText(("%d %s%s%s"):format(#items, state.tab == "group" and "groups" or "players",
+        merged > 0 and (" · " .. merged .. " in both chat and Finder") or "",
+        state.filtered > 0 and (" · " .. state.filtered .. " hidden by filters") or ""))
+
+    -- Filters
+    frame.activityDrop:Set(L.db.activity)
+    frame.levelDrop:Set(L.db.levels)
+    frame.sourceDrop:Set(L.db.source)
+    frame.roleSeg:Set(L.db.role)
+    frame.roleHeader:SetText(state.tab == "group" and "ROLE · GROUPS THAT NEED" or "ROLE · PLAYERS WHO PLAY")
 end
 
 function UI.Refresh()
     if not frame or not frame:IsShown() then return end
     local q = strlower(strtrim(state.search))
+    local level = UnitLevel("player")
     wipe(items)
+    wipe(activityNames)
     counts.group, counts.player = 0, 0
+    state.filtered = 0
+    local seen = {}
     for _, e in ipairs(L.Build()) do
+        if e.activity and not seen[e.activity] then
+            seen[e.activity] = true
+            activityNames[#activityNames + 1] = e.activity
+        end
         if matchesSearch(e, q) then
-            counts[e.kind] = counts[e.kind] + 1
-            if e.kind == state.tab then items[#items + 1] = e end
+            if L.Passes(e, L.db, level) then
+                counts[e.kind] = counts[e.kind] + 1
+                if e.kind == state.tab then items[#items + 1] = e end
+            elseif e.kind == state.tab then
+                state.filtered = state.filtered + 1
+            end
         end
     end
+    -- Keep the chosen dungeon in the dropdown even when nobody runs it right now.
+    if L.db.activity ~= "all" and not seen[L.db.activity] then activityNames[#activityNames + 1] = L.db.activity end
+    sort(activityNames)
     state.offset = min(state.offset, maxOffset())
     updateChrome()
     render()
@@ -334,6 +358,120 @@ local function armRefresh()
 end
 
 -- ---------------------------------------------------------------------------
+-- Filters (sidebar)
+-- ---------------------------------------------------------------------------
+
+local CLASSES = { "WARRIOR", "PALADIN", "HUNTER", "ROGUE", "PRIEST", "SHAMAN", "MAGE", "WARLOCK", "DRUID" }
+local LEVEL_OPTIONS = { { value = "any", label = "Any level" }, { value = 2, label = "Within 2 of my level" },
+    { value = 5, label = "Within 5 of my level" } }
+local SOURCE_OPTIONS = { { value = "both", label = "Chat + Finder" }, { value = "chat", label = "Chat only" },
+    { value = "finder", label = "Finder only" } }
+local ROLE_OPTIONS = { { value = "any", label = "All" }, { value = "tank", label = "Tank" },
+    { value = "healer", label = "Healer" }, { value = "dps", label = "DPS" } }
+
+
+local function filterHeader(parent, text, y)
+    local fs = W.Text(parent, "heading", -1, "textFaint")
+    fs:SetPoint("TOPLEFT", PAD, y)
+    fs:SetText(text)
+    return fs
+end
+
+local function className(class)
+    local names = LOCALIZED_CLASS_NAMES_MALE
+    return names and names[class] or (class:sub(1, 1) .. strlower(class:sub(2)))
+end
+
+local function updateClassButtons()
+    local hidden = 0
+    for _, b in ipairs(frame.classButtons) do
+        local off = L.db.hiddenClasses[b.class] == true
+        if off then hidden = hidden + 1 end
+        b.icon:SetDesaturated(off)
+        b.icon:SetAlpha(off and 0.4 or 1)
+        b.label:SetTextColor(Theme:Color(off and "textFaint" or "text"))
+        b.strike:SetShown(off)
+    end
+    frame.classNote:SetText(hidden > 0 and ("Click a class to show it again. " .. hidden .. " hidden.")
+        or "Click a class to hide it.")
+end
+
+local function buildFilters(side)
+    local w = SIDE_W - PAD * 2
+    local function changed()
+        state.offset = 0
+        UI.Refresh()
+    end
+
+    filterHeader(side, "DUNGEON / RAID", -110)
+    frame.activityDrop = W.Dropdown(side, w, function()
+        local opts = { { value = "all", label = "All dungeons" } }
+        for _, n in ipairs(activityNames) do opts[#opts + 1] = { value = n, label = n } end
+        return opts
+    end, function(v) L.db.activity = v; changed() end)
+    frame.activityDrop:SetPoint("TOPLEFT", PAD, -128)
+
+    filterHeader(side, "LEVEL", -166)
+    frame.levelDrop = W.Dropdown(side, w, function() return LEVEL_OPTIONS end,
+        function(v) L.db.levels = v; changed() end)
+    frame.levelDrop:SetPoint("TOPLEFT", PAD, -184)
+
+    filterHeader(side, "SOURCE", -222)
+    frame.sourceDrop = W.Dropdown(side, w, function() return SOURCE_OPTIONS end,
+        function(v) L.db.source = v; changed() end)
+    frame.sourceDrop:SetPoint("TOPLEFT", PAD, -240)
+
+    frame.roleHeader = filterHeader(side, "ROLE", -278)
+    frame.roleSeg = W.Segment(side, ROLE_OPTIONS, function(v) L.db.role = v; changed() end)
+    frame.roleSeg:SetPoint("TOPLEFT", PAD, -296)
+
+    filterHeader(side, "HIDE GROUPS THAT INCLUDE", -336)
+    frame.classButtons = {}
+    local cellW, cellH = (w - 8) / 3, 28
+    for i, class in ipairs(CLASSES) do
+        local b = CreateFrame("Button", nil, side)
+        b.class = class
+        b:SetSize(cellW, cellH)
+        b:SetPoint("TOPLEFT", PAD + ((i - 1) % 3) * (cellW + 4), -354 - floor((i - 1) / 3) * (cellH + 4))
+        b.bg = W.Fill(b, "field", 1)
+        b.bg:SetAllPoints()
+        W.Border(b, "line")
+        b.icon = b:CreateTexture(nil, "ARTWORK")
+        b.icon:SetSize(16, 16)
+        b.icon:SetPoint("LEFT", 5, 0)
+        setClassIcon(b.icon, class)
+        b.label = W.Text(b, "semibold", -2, "text")
+        b.label:SetPoint("LEFT", b.icon, "RIGHT", 4, 0)
+        b.label:SetText(className(class))
+        b.strike = b:CreateTexture(nil, "OVERLAY")
+        b.strike:SetHeight(1)
+        b.strike:SetPoint("LEFT", b.label, "LEFT", -1, 0)
+        b.strike:SetPoint("RIGHT", b.label, "RIGHT", 1, 0)
+        b.strike:SetColorTexture(Theme:Color("textDim"))
+        b:SetScript("OnClick", function(self)
+            L.db.hiddenClasses[self.class] = not L.db.hiddenClasses[self.class] or nil
+            updateClassButtons()
+            changed()
+        end)
+        frame.classButtons[i] = b
+    end
+    frame.classNote = W.Text(side, "regular", -1, "textFaint")
+    frame.classNote:SetPoint("TOPLEFT", PAD, -354 - 3 * (cellH + 4) - 6)
+    frame.classNote:SetWidth(w)
+    frame.classNote:SetJustifyH("LEFT")
+
+    frame.resetBtn = W.Button(side, "Reset filters", "ghost", function()
+        L.db.activity, L.db.levels, L.db.source, L.db.role = "all", "any", "both", "any"
+        wipe(L.db.hiddenClasses)
+        updateClassButtons()
+        changed()
+    end)
+    frame.resetBtn:SetHeight(26)
+    frame.resetBtn:SetPoint("TOPLEFT", frame.classNote, "BOTTOMLEFT", -8, -10)
+    updateClassButtons()
+end
+
+-- ---------------------------------------------------------------------------
 -- Build
 -- ---------------------------------------------------------------------------
 
@@ -347,7 +485,7 @@ local function build()
     frame:SetMovable(true)
     frame:SetResizable(true)
     frame:EnableMouse(true)
-    W.SetResizeBounds(frame, 820, 420, 2000, 1400)
+    W.SetResizeBounds(frame, 820, 580, 2000, 1400)
     frame.bg = W.Fill(frame, "window", 0.98)
     frame.bg:SetAllPoints()
 
@@ -414,13 +552,7 @@ local function build()
     tabLine:SetPoint("TOPRIGHT", -PAD, -92)
     tabLine:SetColorTexture(Theme:Color("line"))
 
-    local note = W.Text(side, "regular", -1, "textFaint")
-    note:SetPoint("TOPLEFT", PAD, -112)
-    note:SetWidth(SIDE_W - PAD * 2)
-    note:SetWordWrap(true)
-    note:SetJustifyH("LEFT")
-    note:SetText("Filters (dungeon, level, source, classes) come in the next step.\n\n"
-        .. "Groups: listed groups and LFM posts. Players: players looking for a group.")
+    buildFilters(side)
 
     -- Content
     local content = CreateFrame("Frame", nil, frame)

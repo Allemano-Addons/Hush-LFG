@@ -147,3 +147,30 @@ function L.Build()
     sort(entries, function(a, b) return a.age < b.age end)
     return entries
 end
+
+-- ---------------------------------------------------------------------------
+-- Filters (the sidebar). db = the saved settings; level = your level.
+-- ---------------------------------------------------------------------------
+
+function L.Passes(e, db, level)
+    if db.source == "chat" and e.source == "finder" then return false end
+    if db.source == "finder" and e.source == "chat" then return false end
+    if db.activity ~= "all" and e.activity ~= db.activity then return false end
+    -- Levels: only entries with a known level can be filtered out.
+    if type(db.levels) == "number" and level then
+        local lo, hi = e.minLevel or e.level, e.maxLevel or e.level
+        if lo and hi and (hi < level - db.levels or lo > level + db.levels) then return false end
+    end
+    -- Role: groups that need it, players who can play it.
+    if db.role ~= "any" then
+        if e.kind == "group" and not (e.missing and (e.missing[db.role] or 0) > 0) then return false end
+        if e.kind == "player" and not (e.roles and e.roles[db.role]) then return false end
+    end
+    -- Classes: hide a group with any member of a hidden class, or a player of that class.
+    if next(db.hiddenClasses) then
+        for _, m in ipairs(e.members) do
+            if m.class and db.hiddenClasses[m.class] then return false end
+        end
+    end
+    return true
+end

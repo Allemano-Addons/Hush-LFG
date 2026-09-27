@@ -18,3 +18,8 @@
 - Whisper (opens Hush) on every row, Invite on players.
 - `Tests/merge_test.lua`: offline test of the merging (not loaded by the game).
 - From the first window test: chat posts are only listed when they name a dungeon or a role ("LF enchanter" is not a group; Hush Feed now sorts crafter requests as Services). Levels are the members' own levels (the Group Finder's minimum is often 0); a player shows their level.
+
+### Step 3 – Filters
+- Sidebar filters, saved between sessions: Dungeon / Raid (the dungeons in the list), Level (any, within 2 or 5 of your level), Source (Chat + Finder, Chat only, Finder only), Role (groups that need it / players who play it) and classes to hide (the real class icons; a group with any member of a hidden class is hidden, as is a player of that class). Reset filters.
+- The tab counts follow the filters; the footer says how many are hidden by filters.
+- `/hlfg probe` also shows what Blizzard's browse frame knows (to make Refresh Finder work without a first search in the Group Finder).

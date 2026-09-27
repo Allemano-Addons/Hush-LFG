@@ -15,5 +15,5 @@ read_globals = {
     "sort", "floor", "ceil", "min", "max", "format", "date", "time", "CopyTable", "geterrorhandler",
     "CreateFrame", "UIParent", "DEFAULT_CHAT_FRAME", "GetTime", "C_Timer",
     "C_LFGList", "C_Texture", "_G", "unpack",
-    "UISpecialFrames", "RAID_CLASS_COLORS", "CUSTOM_CLASS_COLORS", "InCombatLockdown", "issecretvalue", "CLASS_ICON_TCOORDS",
+    "UISpecialFrames", "RAID_CLASS_COLORS", "CUSTOM_CLASS_COLORS", "InCombatLockdown", "UnitLevel", "LOCALIZED_CLASS_NAMES_MALE", "issecretvalue", "CLASS_ICON_TCOORDS",
 }

@@ -14,10 +14,12 @@ end
 -- ---------------------------------------------------------------------------
 
 local DEFAULTS = {
+    -- Filters
     source = "both",        -- "both" / "chat" / "finder"
+    activity = "all",       -- a dungeon name, or "all"
+    levels = "any",         -- "any" / 2 / 5: within this many levels of yours
+    role = "any",           -- "any" / "tank" / "healer" / "dps": groups that need it, players who play it
     hiddenClasses = {},     -- classFile -> true: hide groups/players with this class
-    levelMin = 1,
-    levelMax = 60,
     lfgWindow = {},
 }
 

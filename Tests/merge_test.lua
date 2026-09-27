@@ -45,3 +45,32 @@ check(by["Craft Seeker"] == nil, "a post without dungeon or role is left out")
 check(by["Oh Miyu"].minLevel == nil and by["Ure Savior"].minLevel == 20, "levels come from the members")
 check(L.DetectActivity("dm run") == "Deadmines", "dm -> the Finder's Deadmines")
 print(bad == 0 and "ALL OK" or (bad .. " wrong"))
+
+-- Filters
+local db = { source = "both", activity = "all", levels = "any", role = "any", hiddenClasses = {} }
+local function passing()
+    local n = {}
+    for _, e in ipairs(entries) do if L.Passes(e, db, 20) then n[#n + 1] = e.leader end end
+    table.sort(n)
+    return table.concat(n, ",")
+end
+bad = 0
+check(passing() == "Big Tank,Oh Miyu,Solo Guy,Teffes Kadaver,Ure Savior", "no filters: all")
+db.source = "finder"
+check(passing() == "Oh Miyu,Teffes Kadaver,Ure Savior", "Finder only (both counts)")
+db.source = "chat"
+check(passing() == "Big Tank,Solo Guy,Teffes Kadaver", "chat only (both counts)")
+db.source = "both"; db.activity = "Deadmines"
+check(passing() == "Oh Miyu", "one dungeon")
+db.activity = "all"; db.role = "tank"
+check(passing() == "Big Tank,Oh Miyu", "tank: groups that need one")
+db.role = "healer"
+check(passing() == "Oh Miyu,Ure Savior", "healer: Oh Miyu needs one, Ure can heal")
+db.role = "any"; db.hiddenClasses = { ROGUE = true }
+check(passing() == "Big Tank,Solo Guy,Teffes Kadaver,Ure Savior", "hide rogues hides Oh Miyu's group")
+db.hiddenClasses = { MAGE = true }
+check(passing() == "Big Tank,Oh Miyu,Teffes Kadaver,Ure Savior", "hide mages hides the mage player")
+db.hiddenClasses = {}; db.levels = 2
+check(L.Passes({ kind = "player", members = {}, level = 30, source = "finder" }, db, 20) == false, "level 30 is too far from 20")
+check(L.Passes({ kind = "player", members = {}, source = "chat" }, db, 20) == true, "unknown level stays")
+print(bad == 0 and "FILTERS OK" or (bad .. " filter checks wrong"))

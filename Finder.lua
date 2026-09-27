@@ -224,6 +224,33 @@ function Finder.Probe()
         if path(unpack(check)) then found[#found + 1] = table.concat(check, ".") end
     end
     L.Print("frames:", #found > 0 and table.concat(found, ", ") or "none loaded (open the Group Finder once, then probe again)")
+    -- What the browse frame knows before and after you open it (why Refresh needs a first search).
+    local browse = _G.LFGBrowseFrame
+    if type(browse) == "table" then
+        local fields = {}
+        pcall(function()
+            for k, v in pairs(browse) do
+                local lk = type(k) == "string" and strlower(k) or ""
+                if lk:find("categ") or lk:find("activ") or lk:find("search") or lk:find("filter") or lk:find("drop") then
+                    local desc = type(v)
+                    if type(v) == "number" or type(v) == "boolean" or type(v) == "string" then
+                        desc = tostring(v)
+                    elseif type(v) == "table" then
+                        local sel = v.selectedValue or v.value or v.selectedValues
+                        if sel ~= nil then desc = "table(" .. (type(sel) == "table" and ("#" .. #sel) or tostring(sel)) .. ")" end
+                    end
+                    fields[#fields + 1] = k .. "=" .. desc
+                end
+            end
+        end)
+        sort(fields)
+        L.Print("browse:", #fields > 0 and table.concat(fields, " ") or "nothing", "· shown once:", tostring(browse:IsShown() or browse.hasShown or false))
+    end
+    local buttons = {}
+    for _, n in ipairs({ "LFGMicroButton", "LFGParentFrameTab1", "LFGParentFrameTab2", "ToggleLFGParentFrame", "LFGParentFrame_Toggle" }) do
+        if _G[n] then buttons[#buttons + 1] = n end
+    end
+    L.Print("toggles:", #buttons > 0 and table.concat(buttons, ", ") or "none")
     L.Print("results:", #L.listings, Finder.updated and ("(" .. (time() - Finder.updated) .. " s ago)") or "(none yet - search in the Group Finder)")
     local first = L.listings[1]
     if first then
