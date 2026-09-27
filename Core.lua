@@ -51,13 +51,15 @@ SLASH_HUSHLFG2 = "/hushlfg"
 SlashCmdList.HUSHLFG = function(msg)
     local cmd, rest = strtrim(msg or ""):match("^(%S*)%s*(.-)$")
     cmd = strlower(cmd or "")
-    if cmd == "probe" then
+    if cmd == "" then
+        L.UI.Toggle()
+    elseif cmd == "probe" then
         L.Finder.Probe()
     elseif cmd == "search" then
         L.Finder.Search(tonumber(rest))
     elseif cmd == "dump" then
         L.Finder.Dump()
     else
-        L.Print("/hlfg probe - what the Group Finder lets us read, /hlfg dump - list the results")
+        L.Print("/hlfg - open the window, /hlfg probe - what the Group Finder lets us read, /hlfg dump - list the results")
     end
 end

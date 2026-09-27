@@ -36,6 +36,30 @@ end
 -- ---------------------------------------------------------------------------
 
 local activityCache = {}
+L.activityNames = {}     -- every activity name seen, for finding dungeons in chat posts
+
+-- "TANK" / "HEALER" / "DAMAGER" -> "tank" / "healer" / "dps"; "NONE" -> nil.
+function L.NormRole(r)
+    if type(r) ~= "string" then return nil end
+    r = strlower(r)
+    if r:find("tank") then return "tank" end
+    if r:find("heal") then return "healer" end
+    if r:find("dam") or r:find("dps") then return "dps" end
+    return nil
+end
+
+-- lfgRoles as { tank = true, ... } (it can be a set or a list).
+function L.RoleSet(t)
+    local set = {}
+    if type(t) ~= "table" then return set end
+    pcall(function()
+        for k, v in pairs(t) do
+            local role = (v == true and L.NormRole(k)) or L.NormRole(v)
+            if role then set[role] = true end
+        end
+    end)
+    return set
+end
 
 local function activity(id)
     if not id then return nil end
@@ -46,6 +70,9 @@ local function activity(id)
             minLevel = get(a, "minLevel"),
             maxLevel = get(a, "maxLevel") or get(a, "maxLevelSuggestion"),
         } or false
+        if activityCache[id] and type(activityCache[id].name) == "string" then
+            L.activityNames[activityCache[id].name] = true
+        end
     end
     return activityCache[id] or nil
 end
@@ -80,11 +107,14 @@ local function readListing(id)
                 name = get(p, "name"),
                 class = get(p, "classFilename"),
                 level = get(p, "level"),
-                role = get(p, "assignedRole"),
+                role = L.NormRole(get(p, "assignedRole")),
+                roles = L.RoleSet(get(p, "lfgRoles")), -- the roles a player signed up for
                 leader = get(p, "isLeader"),
+                area = get(p, "areaName"),
             }
         end
     end
+    l.readAt = time()
     return l
 end
 
@@ -142,8 +172,6 @@ events:SetScript("OnEvent", function(_, event, ...)
     local ok, err = pcall(function(...)
         if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" then
             readAll()
-            -- Step 1 only (test): confirm that Blizzard's searches reach us.
-            L.Print(("Read %d listings from the Group Finder. /hlfg dump to list them."):format(#L.listings))
         elseif event == "LFG_LIST_SEARCH_RESULT_UPDATED" then
             readOne(...)
         elseif event == "LFG_LIST_SEARCH_FAILED" then

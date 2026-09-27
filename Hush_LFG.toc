@@ -8,3 +8,5 @@
 
 Core.lua
 Finder.lua
+Merge.lua
+UI.lua
