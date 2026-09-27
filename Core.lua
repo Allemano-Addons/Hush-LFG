@@ -59,6 +59,8 @@ SlashCmdList.HUSHLFG = function(msg)
         L.Finder.Probe()
     elseif cmd == "search" then
         L.Finder.Search(tonumber(rest))
+    elseif cmd == "side" then
+        L.Finder.Side()
     elseif cmd == "frames" then
         L.Finder.Frames()
     elseif cmd == "dump" then

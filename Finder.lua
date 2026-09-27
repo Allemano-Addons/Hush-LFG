@@ -392,3 +392,47 @@ function Finder.Frames()
     sort(side)
     L.Print("other tabs:", #side > 0 and table.concat(side, ", ") or "none")
 end
+
+-- /hlfg side: every shown frame attached to the Group Finder window that is not one of its
+-- known panels (to find Forever's side buttons: the eye, the magnifier and the people).
+function Finder.Side()
+    local root = _G.LFGParentFrame
+    if not (root and root:IsShown()) then L.Print("Open the Group Finder first (I), then /hlfg side.") return end
+    local known = { [_G.LFGListingFrame or 0] = true, [_G.LFGBrowseFrame or 0] = true, [_G.LFGWhoListFrame or 0] = true }
+    local function attached(f)
+        for i = 1, (f.GetNumPoints and f:GetNumPoints() or 0) do
+            local _, rel = f:GetPoint(i)
+            if rel == root then return true end
+        end
+        local p = f.GetParent and f:GetParent()
+        return p == root
+    end
+    local function texInfo(f)
+        for _, r in ipairs({ f:GetRegions() }) do
+            if r.GetObjectType and r:GetObjectType() == "Texture" then
+                local atlas = r.GetAtlas and r:GetAtlas()
+                local file = r.GetTexture and r:GetTexture()
+                if atlas or file then return tostring(atlas or file) end
+            end
+        end
+        return "-"
+    end
+    local found = 0
+    local f = EnumerateFrames()
+    while f do
+        local ok, hit = pcall(function()
+            return f:IsShown() and not known[f] and f ~= root and attached(f) and not (f.GetName and f:GetName())
+        end)
+        if ok and hit then
+            found = found + 1
+            local kind = f:GetObjectType()
+            local x, y = f:GetCenter()
+            L.Print(("#%d %s %dx%d at %d,%d click:%s tex:%s"):format(found, kind, f:GetWidth(), f:GetHeight(),
+                x or 0, y or 0, tostring(f.Click ~= nil), texInfo(f)))
+            Finder.sideFrames = Finder.sideFrames or {}
+            Finder.sideFrames[found] = f
+        end
+        f = EnumerateFrames(f)
+    end
+    if found == 0 then L.Print("No unnamed frames attached to the Group Finder.") end
+end
