@@ -199,6 +199,7 @@ local events = CreateFrame("Frame")
 events:SetScript("OnEvent", function(_, event, ...)
     local ok, err = pcall(function(...)
         if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" then
+            if L.HookGroupFinder then L.HookGroupFinder() end
             readAll()
         elseif event == "LFG_LIST_SEARCH_RESULT_UPDATED" then
             readOne(...)
@@ -211,6 +212,7 @@ end)
 
 function Finder.Init()
     if not C then return end
+    if L.HookGroupFinder then L.HookGroupFinder() end
     for _, e in ipairs({ "LFG_LIST_SEARCH_RESULTS_RECEIVED", "LFG_LIST_SEARCH_RESULT_UPDATED", "LFG_LIST_SEARCH_FAILED" }) do
         pcall(events.RegisterEvent, events, e)
     end

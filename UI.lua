@@ -747,3 +747,103 @@ end
 -- Entry points in Hush: a title-row button and the launcher menu.
 Hush.AddTitleButton({ icon = "person", glyph = "L", tooltip = "Hush LFG", onClick = function() UI.Toggle() end })
 Hush.AddLauncherMenuItems(function() return { text = "Hush LFG", onClick = function() UI.Toggle() end } end)
+
+-- ---------------------------------------------------------------------------
+-- A fourth side tab in Blizzard's Group Finder window (under the eye, magnifier and people)
+-- that opens Hush LFG. Our own frame on their window; it runs none of their code.
+-- ---------------------------------------------------------------------------
+
+local SIDE_ATLAS = "common-sidetab"
+local sideTab
+
+local function isSideTab(f)
+    if f == sideTab or not (f.GetRegions and f:IsShown()) then return false end
+    for _, r in ipairs({ f:GetRegions() }) do
+        if r.GetAtlas and r:GetAtlas() == SIDE_ATLAS then return true end
+    end
+    return false
+end
+
+-- The lowest of Blizzard's side tabs (they are unnamed frames on the window).
+local function lowestSideTab(parent)
+    local best, bestY
+    local function consider(f)
+        local ok, yes = pcall(isSideTab, f)
+        if ok and yes then
+            local _, y = f:GetCenter()
+            if y and (not bestY or y < bestY) then best, bestY = f, y end
+        end
+    end
+    for _, c in ipairs({ parent:GetChildren() }) do consider(c) end
+    if not best then
+        -- Not children of the window: look for frames anchored to it.
+        local f = EnumerateFrames()
+        while f do
+            for i = 1, (f.GetNumPoints and f:GetNumPoints() or 0) do
+                local _, rel = f:GetPoint(i)
+                if rel == parent then consider(f) break end
+            end
+            f = EnumerateFrames(f)
+        end
+    end
+    return best
+end
+
+local function placeSideTab(parent)
+    local anchor = lowestSideTab(parent)
+    sideTab:ClearAllPoints()
+    if anchor then
+        sideTab:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
+        sideTab:SetFrameLevel(anchor:GetFrameLevel())
+        sideTab.placed = true
+    else
+        sideTab:SetPoint("TOPLEFT", parent, "TOPRIGHT", -4, -240)
+    end
+end
+
+local function createSideTab(parent)
+    sideTab = CreateFrame("Button", nil, parent)
+    sideTab:SetSize(55, 55)
+    sideTab.bg = sideTab:CreateTexture(nil, "BACKGROUND")
+    sideTab.bg:SetAllPoints()
+    if not pcall(sideTab.bg.SetAtlas, sideTab.bg, SIDE_ATLAS) then sideTab.bg:SetColorTexture(0, 0, 0, 0.6) end
+    sideTab.icon = sideTab:CreateTexture(nil, "ARTWORK")
+    sideTab.icon:SetSize(30, 30)
+    sideTab.icon:SetPoint("CENTER", -2, 0)
+    sideTab.icon:SetTexture("Interface\\AddOns\\Hush\\Media\\logo")
+    sideTab.hl = sideTab:CreateTexture(nil, "HIGHLIGHT")
+    sideTab.hl:SetAllPoints()
+    if pcall(sideTab.hl.SetAtlas, sideTab.hl, SIDE_ATLAS) then
+        sideTab.hl:SetBlendMode("ADD")
+        sideTab.hl:SetAlpha(0.35)
+    end
+    sideTab:SetScript("OnClick", function()
+        if not (frame and frame:IsShown()) then UI.Toggle() end
+    end)
+    sideTab:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Hush LFG")
+        GameTooltip:AddLine("Groups and players from the Group Finder and chat, with filters.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    sideTab:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    placeSideTab(parent)
+end
+
+-- Called when our addon loads and on every Group Finder result (the window may load late).
+function L.HookGroupFinder()
+    local parent = _G.LFGParentFrame
+    if not parent or L.groupFinderHooked then return end
+    L.groupFinderHooked = true
+    parent:HookScript("OnShow", function(self)
+        -- A frame later: Blizzard's side tabs are placed by then.
+        C_Timer.After(0, function()
+            if not sideTab then
+                createSideTab(self)
+            elseif not sideTab.placed then
+                placeSideTab(self)
+            end
+        end)
+    end)
+    if parent:IsShown() and not sideTab then createSideTab(parent) end
+end
