@@ -4,6 +4,7 @@ ignore:
   - .luacheckrc
   - .gitattributes
   - .github
+  - docs
   - Tests
 
 manual-changelog:
