@@ -2,9 +2,12 @@
 ## Title: Hush LFG
 ## Notes: Groups and players from chat and the Group Finder in one list, for Hush.
 ## Version: 0.1.0
+## Author: Allemano
+## Category: Group Finder
+## X-Curse-Project-ID: 1719074
 ## Dependencies: Hush, Hush_Feed
 ## SavedVariables: HushLFGDB
-## IconTexture: Interface\AddOns\Hush\Media\logo
+## IconTexture: Interface\AddOns\Hush\Media\wow\icon
 
 Core.lua
 Finder.lua
